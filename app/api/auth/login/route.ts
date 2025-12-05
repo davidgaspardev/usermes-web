@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-config': configToken, // Backend can use this to identify tenant/company
       },
       body: JSON.stringify({ username, password }),
     });
