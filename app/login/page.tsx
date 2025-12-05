@@ -3,35 +3,55 @@
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-interface BackendConfig {
-  domain: string;
-  companyName: string;
-}
-
-function decodeConfig(encodedConfig: string): BackendConfig | null {
-  try {
-    // Decode URL-safe base64
-    const base64 = encodedConfig.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonString = atob(base64);
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error('Failed to decode config:', error);
-    return null;
-  }
-}
+import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
+import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<BackendConfig | null>(null);
+  const [configToken, setConfigToken] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     const configParam = searchParams.get('config');
     if (configParam) {
+      setConfigToken(configParam);
       const decoded = decodeConfig(configParam);
       setConfig(decoded);
     }
   }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const result = await loginAction(
+        { username, password },
+        configToken
+      );
+
+      if (result.success) {
+        // Store token and redirect
+        localStorage.setItem('authToken', result.token || '');
+        // Redirect to dashboard or home
+        window.location.href = '/dashboard';
+      } else {
+        setError(result.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
@@ -52,15 +72,24 @@ export default function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-800 mb-2">
                 Username
               </label>
               <input
                 id="username"
+                name="username"
                 type="text"
-                className="w-full px-4 py-3 rounded-lg border border-yellow-500 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
+                required
+                disabled={isLoading}
+                className="w-full px-4 py-3 rounded-lg border border-yellow-500 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:border-transparent disabled:opacity-50"
                 placeholder="Enter your username"
               />
             </div>
@@ -71,17 +100,21 @@ export default function LoginPage() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                className="w-full px-4 py-3 rounded-lg border border-yellow-500 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:border-transparent"
+                required
+                disabled={isLoading}
+                className="w-full px-4 py-3 rounded-lg border border-yellow-500 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:border-transparent disabled:opacity-50"
                 placeholder="Enter your password"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-yellow-400"
+              disabled={isLoading || !configToken}
+              className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
