@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
-import { loginAction } from "./actions";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -32,10 +31,17 @@ export default function LoginPage() {
     const password = formData.get('password') as string;
 
     try {
-      const result = await loginAction(
-        { username, password },
-        configToken
-      );
+      // Call API route with x-config header
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-config': configToken, // Send config token as header
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const result = await response.json();
 
       if (result.success) {
         // Store token and redirect
