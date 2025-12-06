@@ -3,8 +3,8 @@
  */
 
 export interface BackendConfig {
-  domain: string;
   companyName: string;
+  cnpj: string;
 }
 
 /**
@@ -28,7 +28,7 @@ export function decodeConfig(encodedConfig: string): BackendConfig | null {
     const config = JSON.parse(jsonString) as BackendConfig;
     
     // Validate required fields
-    if (!config.domain || !config.companyName) {
+    if (!config.companyName || !config.cnpj) {
       throw new Error('Invalid config: missing required fields');
     }
     
