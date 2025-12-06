@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
 import { saveConfigToken, getConfigToken, apiClient } from "@/utils/api-client";
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<BackendConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,5 +141,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
