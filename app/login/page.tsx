@@ -133,9 +133,9 @@ function LoginForm() {
           {/* Debug info - remove in production */}
           {config && (
             <div className="mt-4 p-3 bg-white/50 rounded-lg text-xs">
-              <p className="font-semibold text-gray-700">Backend Config:</p>
-              <p className="text-gray-600">Domain: {config.domain}</p>
+              <p className="font-semibold text-gray-700">Company Info:</p>
               <p className="text-gray-600">Company: {config.companyName}</p>
+              <p className="text-gray-600">CNPJ: {config.cnpj}</p>
             </div>
           )}
         </div>

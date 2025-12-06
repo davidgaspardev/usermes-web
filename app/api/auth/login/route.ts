@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBackendDomain, isValidConfigToken } from '@/utils/config-map';
+import { getBackendAddress, isValidConfigToken } from '@/utils/config-map';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,10 +22,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get backend domain from server-side config map (never exposed to client)
-    const backendDomain = getBackendDomain(configToken);
+    // Get backend address from server-side map (never exposed to client)
+    const backendAddress = getBackendAddress(configToken);
 
-    if (!backendDomain) {
+    if (!backendAddress) {
       return NextResponse.json(
         { success: false, error: 'Configuration not found' },
         { status: 404 }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Call backend login endpoint
     // x-config header allows backend to identify tenant/company from the token
-    const response = await fetch(`${backendDomain}/api/users/login`, {
+    const response = await fetch(`${backendAddress}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
