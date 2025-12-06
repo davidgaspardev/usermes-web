@@ -4,19 +4,29 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
+import { saveConfigToken, getConfigToken, apiClient } from "@/utils/api-client";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<BackendConfig | null>(null);
-  const [configToken, setConfigToken] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
+    // Check if config exists in localStorage first
+    const storedToken = getConfigToken();
+    
+    // Get config from URL param
     const configParam = searchParams.get('config');
+    
     if (configParam) {
-      setConfigToken(configParam);
+      // Save to localStorage for future requests
+      saveConfigToken(configParam);
       const decoded = decodeConfig(configParam);
+      setConfig(decoded);
+    } else if (storedToken) {
+      // Load from localStorage if not in URL
+      const decoded = decodeConfig(storedToken);
       setConfig(decoded);
     }
   }, [searchParams]);
@@ -31,13 +41,9 @@ export default function LoginPage() {
     const password = formData.get('password') as string;
 
     try {
-      // Call API route with x-config header
-      const response = await fetch('/api/auth/login', {
+      // Call API route with x-config header (automatically added by apiClient)
+      const response = await apiClient('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-config': configToken, // Send config token as header
-        },
         body: JSON.stringify({ username, password }),
       });
 
@@ -52,7 +58,7 @@ export default function LoginPage() {
         setError(result.error || 'Login failed');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);
@@ -62,7 +68,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
       <div className="w-full max-w-md">
-        <div className="bg-primary rounded-2xl shadow-xl p-4">
+        <div className="bg-primary bg-[image:url('/assets/png/effect.png')] rounded-2xl shadow-xl p-4">
           {/* Header with Logo and Name */}
           <div className="flex flex-row items-center justify-center gap-4 h-20 border-b-2 border-[#00000016] mb-6">
             <Image
@@ -117,7 +123,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading || !configToken}
+              disabled={isLoading || !config}
               className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}

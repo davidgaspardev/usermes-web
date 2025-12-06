@@ -45,10 +45,11 @@ export async function POST(request: NextRequest) {
 
     // Call backend login endpoint
     // x-config header allows backend to identify tenant/company from the token
-    const response = await fetch(`${backendDomain}/api/auth/login`, {
+    const response = await fetch(`${backendDomain}/api/users/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-config': configToken, // Pass x-config to backend
       },
       body: JSON.stringify({ username, password }),
     });
