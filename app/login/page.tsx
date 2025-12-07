@@ -51,7 +51,8 @@ function LoginForm() {
 
       if (result.success) {
         // Store token and redirect
-        localStorage.setItem('authToken', result.token || '');
+        const { saveAuthToken } = await import('@/utils/api-client');
+        saveAuthToken(result.token || '');
         // Redirect to dashboard or home
         window.location.href = '/dashboard';
       } else {
