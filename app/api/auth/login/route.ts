@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call backend login endpoint
-    const response = await fetch(`${backendAddress}/api/users/login`, {
+    const response = await fetch(`${backendAddress}/v1/api/iam/users/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
