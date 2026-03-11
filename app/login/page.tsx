@@ -50,18 +50,9 @@ function LoginForm() {
       const result = await response.json();
 
       if (result.success) {
-        // Store token
+        // Store token and go to onboarding for location selection
         saveAuthToken(result.token || '');
-
-        // Check if onboarding is needed (no locations created yet)
-        try {
-          const locResponse = await apiClient('/api/organization/locations', { method: 'GET' });
-          const locData = await locResponse.json();
-          const hasLocations = locData.success && locData.locations && locData.locations.length > 0;
-          window.location.href = hasLocations ? '/dashboard' : '/onboarding';
-        } catch {
-          window.location.href = '/dashboard';
-        }
+        window.location.href = '/onboarding';
       } else {
         setError(result.error || 'Login failed');
       }

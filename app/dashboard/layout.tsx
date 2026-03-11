@@ -1,22 +1,23 @@
 'use client';
 
-import { JSX, useState } from 'react';
+import { JSX, Suspense, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
 }
 
-/**
- * Dashboard layout with a collapsible drawer/sidebar
- */
-export default function DashboardLayout(props: DashboardLayoutProps): JSX.Element {
-    const { children } = props;
-
+function DashboardLayoutInner({ children }: DashboardLayoutProps): JSX.Element {
     const [isDrawerOpen, setIsDrawerOpen] = useState(true);
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const location = searchParams.get('location');
+
+    // Preserve the location param in all nav links
+    const withLocation = (path: string) =>
+        location ? `${path}?location=${location}` : path;
 
     const menuItems = [
         { name: 'Resources', path: '/dashboard/resources', icon: '📦' },
@@ -34,17 +35,29 @@ export default function DashboardLayout(props: DashboardLayoutProps): JSX.Elemen
             >
                 {/* Logo and App Name */}
                 <div className="h-20 flex items-center justify-center border-b border-[#32323216] mx-2">
-                    <Image
-                        src="/icons/usermes.svg"
-                        alt="Usermes logo"
-                        width={40}
-                        height={40}
-                        priority
-                    />
+                    <Link href={withLocation('/dashboard')}>
+                        <Image
+                            src="/icons/usermes.svg"
+                            alt="Usermes logo"
+                            width={40}
+                            height={40}
+                            priority
+                        />
+                    </Link>
                     {isDrawerOpen && (
-                        <span className="ml-3 text-xl font-bold text-gray-800">Usermes</span>
+                        <Link href={withLocation('/dashboard')} className="ml-3 text-xl font-bold text-gray-800">
+                            Usermes
+                        </Link>
                     )}
                 </div>
+
+                {/* Location badge */}
+                {location && isDrawerOpen && (
+                    <div className="mx-3 mt-3 px-3 py-2 bg-white/60 rounded-lg">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Location</p>
+                        <p className="font-mono text-sm font-bold text-gray-800 truncate">{location}</p>
+                    </div>
+                )}
 
                 {/* Menu Items */}
                 <nav className="flex-1 py-6">
@@ -53,7 +66,7 @@ export default function DashboardLayout(props: DashboardLayoutProps): JSX.Elemen
                         return (
                             <Link
                                 key={item.path}
-                                href={item.path}
+                                href={withLocation(item.path)}
                                 className={`flex items-center px-6 py-3 mx-2 rounded-lg transition-colors ${isActive
                                         ? 'bg-yellow-400 text-gray-800'
                                         : 'text-gray-600 hover:bg-gray-100'
@@ -86,7 +99,14 @@ export default function DashboardLayout(props: DashboardLayoutProps): JSX.Elemen
             <main className="flex-1 overflow-auto">
                 {/* Header */}
                 <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-                    <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
+                        {location && (
+                            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-mono">
+                                {location}
+                            </span>
+                        )}
+                    </div>
 
                     {/* User Menu / Actions */}
                     <div className="flex items-center gap-4">
@@ -105,5 +125,13 @@ export default function DashboardLayout(props: DashboardLayoutProps): JSX.Elemen
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps): JSX.Element {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-100"><p className="text-gray-500 text-sm">Loading...</p></div>}>
+            <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </Suspense>
     );
 }

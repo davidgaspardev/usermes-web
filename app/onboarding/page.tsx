@@ -49,16 +49,14 @@ function insertNode(
     if (node.code === parentCode) {
       return { ...node, children: [...node.children, newNode] };
     }
-    return {
-      ...node,
-      children: insertNode(node.children, parentCode, newNode),
-    };
+    return { ...node, children: insertNode(node.children, parentCode, newNode) };
   });
 }
 
 export default function OnboardingPage() {
   const [plants, setPlants] = useState<LocationNode[]>([]);
   const [isLoadingInit, setIsLoadingInit] = useState(true);
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   // Create-plant form state
   const [showCreatePlant, setShowCreatePlant] = useState(false);
@@ -73,7 +71,7 @@ export default function OnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // On mount: guard auth and load existing locations
+  // On mount: guard auth, then load existing locations
   useEffect(() => {
     const authToken = localStorage.getItem("authToken");
     if (!authToken) {
@@ -85,13 +83,10 @@ export default function OnboardingPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.locations?.length > 0) {
-          // Already has locations — go straight to dashboard
-          window.location.href = "/dashboard";
+          setPlants(data.locations as LocationNode[]);
         }
       })
-      .catch(() => {
-        // If check fails, stay on onboarding
-      })
+      .catch(() => {})
       .finally(() => setIsLoadingInit(false));
   }, []);
 
@@ -103,22 +98,14 @@ export default function OnboardingPage() {
     try {
       const response = await apiClient("/api/organization/locations", {
         method: "POST",
-        body: JSON.stringify({
-          code: plantCode.toUpperCase(),
-          name: plantName,
-        }),
+        body: JSON.stringify({ code: plantCode.toUpperCase(), name: plantName }),
       });
       const data = await response.json();
 
       if (data.success) {
         setPlants((prev) => [
           ...prev,
-          {
-            code: plantCode.toUpperCase(),
-            name: plantName,
-            kind: "PLANT",
-            children: [],
-          },
+          { code: plantCode.toUpperCase(), name: plantName, kind: "PLANT", children: [] },
         ]);
         setPlantCode("");
         setPlantName("");
@@ -173,11 +160,7 @@ export default function OnboardingPage() {
     }
   };
 
-  function startAddingChild(
-    parentCode: string,
-    rootCode: string,
-    kind: LocationKind,
-  ) {
+  function startAddingChild(parentCode: string, rootCode: string, kind: LocationKind) {
     setAddingChild({ parentCode, rootCode, kind });
     setChildCode("");
     setChildName("");
@@ -187,24 +170,39 @@ export default function OnboardingPage() {
   function renderNode(node: LocationNode, rootCode: string, depth = 0) {
     const childKind = childKindOf[node.kind];
     const isAddingHere = addingChild?.parentCode === node.code;
+    const isSelected = selectedCode === node.code;
 
     return (
       <div key={node.code}>
         <div
-          className={`flex items-center gap-2 py-2 ${depth > 0 ? "ml-6 border-l-2 border-yellow-200 pl-4" : ""}`}
+          className={`flex items-center gap-2 py-2 rounded-lg px-2 cursor-pointer transition-colors
+            ${depth > 0 ? "ml-6 border-l-2 border-yellow-200 pl-4 rounded-l-none" : ""}
+            ${isSelected ? "bg-yellow-100 border border-yellow-400" : "hover:bg-gray-50"}`}
+          onClick={() => setSelectedCode(node.code)}
         >
+          {/* Selection indicator */}
+          <div
+            className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center
+              ${isSelected ? "border-yellow-500 bg-yellow-500" : "border-gray-300"}`}
+          >
+            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+          </div>
+
           <span className="text-lg">{kindIcon[node.kind]}</span>
-          <span className="font-mono text-sm font-bold text-gray-800">
-            {node.code}
-          </span>
+          <span className="font-mono text-sm font-bold text-gray-800">{node.code}</span>
           <span className="text-gray-400">—</span>
           <span className="text-sm text-gray-700 flex-1">{node.name}</span>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
             {kindLabel[node.kind]}
           </span>
+
+          {/* Add child button — stops click propagation to avoid selecting the parent */}
           {childKind && !isAddingHere && (
             <button
-              onClick={() => startAddingChild(node.code, rootCode, childKind)}
+              onClick={(e) => {
+                e.stopPropagation();
+                startAddingChild(node.code, rootCode, childKind);
+              }}
               className="text-xs text-yellow-700 hover:text-yellow-900 font-medium underline underline-offset-2"
             >
               + {kindLabel[childKind]}
@@ -212,11 +210,9 @@ export default function OnboardingPage() {
           )}
         </div>
 
-        {/* Inline form for adding child under this node */}
+        {/* Inline form for adding child */}
         {isAddingHere && childKind && (
-          <div
-            className={`${depth > 0 ? "ml-6 pl-4 border-l-2 border-yellow-200" : ""}`}
-          >
+          <div className={depth > 0 ? "ml-6 pl-4 border-l-2 border-yellow-200" : ""}>
             <div className="ml-6 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
               <p className="text-xs font-medium text-gray-600 mb-2">
                 New {kindLabel[childKind]} inside{" "}
@@ -269,40 +265,39 @@ export default function OnboardingPage() {
     );
   }
 
+  const hasLocations = plants.length > 0;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10">
         <Image src="/icons/usermes.svg" alt="Usermes" width={40} height={40} />
-        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
-          Usermes
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">Usermes</h1>
       </div>
 
       <div className="w-full max-w-2xl space-y-4">
-        {/* Welcome banner */}
+        {/* Banner */}
         <div className="bg-primary bg-[image:url('/assets/png/effect.png')] rounded-2xl p-6 shadow-lg">
           <h2 className="text-xl font-bold text-gray-800 mb-1">
-            {plants.length === 0
-              ? "Welcome! Set up your plant locations"
-              : "Plant setup"}
+            {!hasLocations ? "Welcome! Set up your plant locations" : "Select your working location"}
           </h2>
           <p className="text-sm text-gray-700">
-            {plants.length === 0
-              ? "Before accessing the dashboard, create at least one plant. You can also add areas, lines and sections to organize your factory."
-              : "Your locations are set. Add more or continue to the dashboard."}
+            {!hasLocations
+              ? "Create at least one plant before accessing the dashboard. You can also organize it with areas, lines and sections."
+              : "Choose the location you will work in. This scopes all data shown in the dashboard."}
           </p>
 
-          {/* Hierarchy guide */}
-          <div className="mt-4 flex items-center gap-1 text-xs text-gray-600 flex-wrap">
-            <span>🏭 Plant</span>
-            <span className="text-gray-400">→</span>
-            <span>🏗️ Area</span>
-            <span className="text-gray-400">→</span>
-            <span>⚙️ Line</span>
-            <span className="text-gray-400">→</span>
-            <span>📍 Section</span>
-          </div>
+          {!hasLocations && (
+            <div className="mt-4 flex items-center gap-1 text-xs text-gray-600 flex-wrap">
+              <span>🏭 Plant</span>
+              <span className="text-gray-400">→</span>
+              <span>🏗️ Area</span>
+              <span className="text-gray-400">→</span>
+              <span>⚙️ Line</span>
+              <span className="text-gray-400">→</span>
+              <span>📍 Section</span>
+            </div>
+          )}
         </div>
 
         {/* Error */}
@@ -312,11 +307,11 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Location tree */}
-        {plants.length > 0 && (
+        {/* Location tree (selectable) */}
+        {hasLocations && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              Your locations
+              {selectedCode ? `Selected: ${selectedCode}` : "Click a location to select it"}
             </h3>
             {plants.map((plant) => renderNode(plant, plant.code))}
           </div>
@@ -325,15 +320,11 @@ export default function OnboardingPage() {
         {/* Create plant form */}
         {showCreatePlant ? (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">
-              New plant
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">New plant</h3>
             <form onSubmit={handleCreatePlant} className="space-y-3">
               <div className="flex gap-3">
                 <div className="w-1/3">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Code
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Code</label>
                   <input
                     value={plantCode}
                     onChange={(e) => setPlantCode(e.target.value)}
@@ -344,9 +335,7 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Name
-                  </label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
                   <input
                     value={plantName}
                     onChange={(e) => setPlantName(e.target.value)}
@@ -366,10 +355,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowCreatePlant(false);
-                    setError("");
-                  }}
+                  onClick={() => { setShowCreatePlant(false); setError(""); }}
                   className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
                 >
                   Cancel
@@ -388,28 +374,24 @@ export default function OnboardingPage() {
             }}
             className="w-full py-3 border-2 border-dashed border-yellow-400 rounded-2xl text-gray-500 hover:bg-yellow-50 transition-colors text-sm font-medium"
           >
-            + Add {plants.length === 0 ? "your first" : "another"} plant
+            + Add {!hasLocations ? "your first" : "another"} plant
           </button>
         )}
 
-        {/* Continue / Skip */}
-        {plants.length > 0 && !showCreatePlant ? (
+        {/* Enter Dashboard */}
+        {hasLocations && !showCreatePlant && (
           <button
-            onClick={() => (window.location.href = "/dashboard")}
-            className="w-full py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-900 transition-colors"
+            disabled={!selectedCode}
+            onClick={() => {
+              if (selectedCode) {
+                window.location.href = `/dashboard?location=${selectedCode}`;
+              }
+            }}
+            className="w-full py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Continue to Dashboard →
+            {selectedCode ? `Enter Dashboard — ${selectedCode}` : "Select a location to continue"}
           </button>
-        ) : plants.length === 0 ? (
-          <p className="text-center text-xs text-gray-400">
-            <button
-              onClick={() => (window.location.href = "/dashboard")}
-              className="underline hover:text-gray-600 transition-colors"
-            >
-              Skip for now
-            </button>
-          </p>
-        ) : null}
+        )}
       </div>
     </div>
   );
