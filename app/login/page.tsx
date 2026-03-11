@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
-import { saveConfigToken, getConfigToken, apiClient } from "@/utils/api-client";
+import { saveConfigToken, getConfigToken, saveAuthToken, apiClient } from "@/utils/api-client";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -15,10 +15,10 @@ function LoginForm() {
   useEffect(() => {
     // Check if config exists in localStorage first
     const storedToken = getConfigToken();
-    
+
     // Get config from URL param
     const configParam = searchParams.get('config');
-    
+
     if (configParam) {
       // Save to localStorage for future requests
       saveConfigToken(configParam);
@@ -50,11 +50,18 @@ function LoginForm() {
       const result = await response.json();
 
       if (result.success) {
-        // Store token and redirect
-        const { saveAuthToken } = await import('@/utils/api-client');
+        // Store token
         saveAuthToken(result.token || '');
-        // Redirect to dashboard or home
-        window.location.href = '/dashboard';
+
+        // Check if onboarding is needed (no locations created yet)
+        try {
+          const locResponse = await apiClient('/api/organization/locations', { method: 'GET' });
+          const locData = await locResponse.json();
+          const hasLocations = locData.success && locData.locations && locData.locations.length > 0;
+          window.location.href = hasLocations ? '/dashboard' : '/onboarding';
+        } catch {
+          window.location.href = '/dashboard';
+        }
       } else {
         setError(result.error || 'Login failed');
       }
