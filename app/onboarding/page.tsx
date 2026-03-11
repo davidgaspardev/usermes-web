@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { apiClient } from '@/utils/api-client';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { apiClient } from "@/utils/api-client";
 
-type LocationKind = 'PLANT' | 'AREA' | 'LINE' | 'SECTION';
+type LocationKind = "PLANT" | "AREA" | "LINE" | "SECTION";
 
 interface LocationNode {
   code: string;
@@ -14,24 +14,24 @@ interface LocationNode {
 }
 
 const childKindOf: Record<LocationKind, LocationKind | null> = {
-  PLANT: 'AREA',
-  AREA: 'LINE',
-  LINE: 'SECTION',
+  PLANT: "AREA",
+  AREA: "LINE",
+  LINE: "SECTION",
   SECTION: null,
 };
 
 const kindLabel: Record<LocationKind, string> = {
-  PLANT: 'Plant',
-  AREA: 'Area',
-  LINE: 'Line',
-  SECTION: 'Section',
+  PLANT: "Plant",
+  AREA: "Area",
+  LINE: "Line",
+  SECTION: "Section",
 };
 
 const kindIcon: Record<LocationKind, string> = {
-  PLANT: '🏭',
-  AREA: '🏗️',
-  LINE: '⚙️',
-  SECTION: '📍',
+  PLANT: "🏭",
+  AREA: "🏗️",
+  LINE: "⚙️",
+  SECTION: "📍",
 };
 
 interface AddingChild {
@@ -43,13 +43,16 @@ interface AddingChild {
 function insertNode(
   nodes: LocationNode[],
   parentCode: string,
-  newNode: LocationNode
+  newNode: LocationNode,
 ): LocationNode[] {
   return nodes.map((node) => {
     if (node.code === parentCode) {
       return { ...node, children: [...node.children, newNode] };
     }
-    return { ...node, children: insertNode(node.children, parentCode, newNode) };
+    return {
+      ...node,
+      children: insertNode(node.children, parentCode, newNode),
+    };
   });
 }
 
@@ -59,31 +62,31 @@ export default function OnboardingPage() {
 
   // Create-plant form state
   const [showCreatePlant, setShowCreatePlant] = useState(false);
-  const [plantCode, setPlantCode] = useState('');
-  const [plantName, setPlantName] = useState('');
+  const [plantCode, setPlantCode] = useState("");
+  const [plantName, setPlantName] = useState("");
 
   // Add-child form state
   const [addingChild, setAddingChild] = useState<AddingChild | null>(null);
-  const [childCode, setChildCode] = useState('');
-  const [childName, setChildName] = useState('');
+  const [childCode, setChildCode] = useState("");
+  const [childName, setChildName] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // On mount: guard auth and load existing locations
   useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem("authToken");
     if (!authToken) {
-      window.location.href = '/login';
+      window.location.href = "/login";
       return;
     }
 
-    apiClient('/api/organization/locations', { method: 'GET' })
+    apiClient("/api/organization/locations", { method: "GET" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.locations?.length > 0) {
           // Already has locations — go straight to dashboard
-          window.location.href = '/dashboard';
+          window.location.href = "/dashboard";
         }
       })
       .catch(() => {
@@ -94,29 +97,37 @@ export default function OnboardingPage() {
 
   const handleCreatePlant = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsSubmitting(true);
 
     try {
-      const response = await apiClient('/api/organization/locations', {
-        method: 'POST',
-        body: JSON.stringify({ code: plantCode.toUpperCase(), name: plantName }),
+      const response = await apiClient("/api/organization/locations", {
+        method: "POST",
+        body: JSON.stringify({
+          code: plantCode.toUpperCase(),
+          name: plantName,
+        }),
       });
       const data = await response.json();
 
       if (data.success) {
         setPlants((prev) => [
           ...prev,
-          { code: plantCode.toUpperCase(), name: plantName, kind: 'PLANT', children: [] },
+          {
+            code: plantCode.toUpperCase(),
+            name: plantName,
+            kind: "PLANT",
+            children: [],
+          },
         ]);
-        setPlantCode('');
-        setPlantName('');
+        setPlantCode("");
+        setPlantName("");
         setShowCreatePlant(false);
       } else {
-        setError(data.error || 'Failed to create plant');
+        setError(data.error || "Failed to create plant");
       }
     } catch {
-      setError('Failed to create plant. Please try again.');
+      setError("Failed to create plant. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,12 +136,12 @@ export default function OnboardingPage() {
   const handleAddChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addingChild) return;
-    setError('');
+    setError("");
     setIsSubmitting(true);
 
     try {
-      const response = await apiClient('/api/organization/locations/add', {
-        method: 'POST',
+      const response = await apiClient("/api/organization/locations/add", {
+        method: "POST",
         body: JSON.stringify({
           code: childCode.toUpperCase(),
           name: childName,
@@ -149,24 +160,28 @@ export default function OnboardingPage() {
           children: [],
         };
         setPlants((prev) => insertNode(prev, addingChild.parentCode, newNode));
-        setChildCode('');
-        setChildName('');
+        setChildCode("");
+        setChildName("");
         setAddingChild(null);
       } else {
-        setError(data.error || 'Failed to add location');
+        setError(data.error || "Failed to add location");
       }
     } catch {
-      setError('Failed to add location. Please try again.');
+      setError("Failed to add location. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  function startAddingChild(parentCode: string, rootCode: string, kind: LocationKind) {
+  function startAddingChild(
+    parentCode: string,
+    rootCode: string,
+    kind: LocationKind,
+  ) {
     setAddingChild({ parentCode, rootCode, kind });
-    setChildCode('');
-    setChildName('');
-    setError('');
+    setChildCode("");
+    setChildName("");
+    setError("");
   }
 
   function renderNode(node: LocationNode, rootCode: string, depth = 0) {
@@ -176,10 +191,12 @@ export default function OnboardingPage() {
     return (
       <div key={node.code}>
         <div
-          className={`flex items-center gap-2 py-2 ${depth > 0 ? 'ml-6 border-l-2 border-yellow-200 pl-4' : ''}`}
+          className={`flex items-center gap-2 py-2 ${depth > 0 ? "ml-6 border-l-2 border-yellow-200 pl-4" : ""}`}
         >
           <span className="text-lg">{kindIcon[node.kind]}</span>
-          <span className="font-mono text-sm font-bold text-gray-800">{node.code}</span>
+          <span className="font-mono text-sm font-bold text-gray-800">
+            {node.code}
+          </span>
           <span className="text-gray-400">—</span>
           <span className="text-sm text-gray-700 flex-1">{node.name}</span>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -198,11 +215,11 @@ export default function OnboardingPage() {
         {/* Inline form for adding child under this node */}
         {isAddingHere && childKind && (
           <div
-            className={`${depth > 0 ? 'ml-6 pl-4 border-l-2 border-yellow-200' : ''}`}
+            className={`${depth > 0 ? "ml-6 pl-4 border-l-2 border-yellow-200" : ""}`}
           >
             <div className="ml-6 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
               <p className="text-xs font-medium text-gray-600 mb-2">
-                New {kindLabel[childKind]} inside{' '}
+                New {kindLabel[childKind]} inside{" "}
                 <span className="font-mono font-semibold">{node.code}</span>
               </p>
               <form onSubmit={handleAddChild} className="flex flex-wrap gap-2">
@@ -225,7 +242,7 @@ export default function OnboardingPage() {
                   disabled={isSubmitting}
                   className="px-4 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50"
                 >
-                  {isSubmitting ? '...' : 'Add'}
+                  {isSubmitting ? "..." : "Add"}
                 </button>
                 <button
                   type="button"
@@ -257,19 +274,23 @@ export default function OnboardingPage() {
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10">
         <Image src="/icons/usermes.svg" alt="Usermes" width={40} height={40} />
-        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">Usermes</h1>
+        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
+          Usermes
+        </h1>
       </div>
 
       <div className="w-full max-w-2xl space-y-4">
         {/* Welcome banner */}
         <div className="bg-primary bg-[image:url('/assets/png/effect.png')] rounded-2xl p-6 shadow-lg">
           <h2 className="text-xl font-bold text-gray-800 mb-1">
-            {plants.length === 0 ? 'Welcome! Set up your plant locations' : 'Plant setup'}
+            {plants.length === 0
+              ? "Welcome! Set up your plant locations"
+              : "Plant setup"}
           </h2>
           <p className="text-sm text-gray-700">
             {plants.length === 0
-              ? 'Before accessing the dashboard, create at least one plant. You can also add areas, lines and sections to organize your factory.'
-              : 'Your locations are set. Add more or continue to the dashboard.'}
+              ? "Before accessing the dashboard, create at least one plant. You can also add areas, lines and sections to organize your factory."
+              : "Your locations are set. Add more or continue to the dashboard."}
           </p>
 
           {/* Hierarchy guide */}
@@ -304,11 +325,15 @@ export default function OnboardingPage() {
         {/* Create plant form */}
         {showCreatePlant ? (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">New plant</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              New plant
+            </h3>
             <form onSubmit={handleCreatePlant} className="space-y-3">
               <div className="flex gap-3">
                 <div className="w-1/3">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Code</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Code
+                  </label>
                   <input
                     value={plantCode}
                     onChange={(e) => setPlantCode(e.target.value)}
@@ -319,7 +344,9 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Name
+                  </label>
                   <input
                     value={plantName}
                     onChange={(e) => setPlantName(e.target.value)}
@@ -335,13 +362,13 @@ export default function OnboardingPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50 font-medium"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Plant'}
+                  {isSubmitting ? "Creating..." : "Create Plant"}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreatePlant(false);
-                    setError('');
+                    setError("");
                   }}
                   className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
                 >
@@ -354,21 +381,21 @@ export default function OnboardingPage() {
           <button
             onClick={() => {
               setShowCreatePlant(true);
-              setPlantCode('');
-              setPlantName('');
+              setPlantCode("");
+              setPlantName("");
               setAddingChild(null);
-              setError('');
+              setError("");
             }}
             className="w-full py-3 border-2 border-dashed border-yellow-400 rounded-2xl text-gray-500 hover:bg-yellow-50 transition-colors text-sm font-medium"
           >
-            + Add {plants.length === 0 ? 'your first' : 'another'} plant
+            + Add {plants.length === 0 ? "your first" : "another"} plant
           </button>
         )}
 
         {/* Continue / Skip */}
         {plants.length > 0 && !showCreatePlant ? (
           <button
-            onClick={() => (window.location.href = '/dashboard')}
+            onClick={() => (window.location.href = "/dashboard")}
             className="w-full py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-900 transition-colors"
           >
             Continue to Dashboard →
@@ -376,7 +403,7 @@ export default function OnboardingPage() {
         ) : plants.length === 0 ? (
           <p className="text-center text-xs text-gray-400">
             <button
-              onClick={() => (window.location.href = '/dashboard')}
+              onClick={() => (window.location.href = "/dashboard")}
               className="underline hover:text-gray-600 transition-colors"
             >
               Skip for now
