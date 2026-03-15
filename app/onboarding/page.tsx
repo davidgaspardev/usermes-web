@@ -49,7 +49,10 @@ function insertNode(
     if (node.code === parentCode) {
       return { ...node, children: [...node.children, newNode] };
     }
-    return { ...node, children: insertNode(node.children, parentCode, newNode) };
+    return {
+      ...node,
+      children: insertNode(node.children, parentCode, newNode),
+    };
   });
 }
 
@@ -98,14 +101,22 @@ export default function OnboardingPage() {
     try {
       const response = await apiClient("/api/organization/locations", {
         method: "POST",
-        body: JSON.stringify({ code: plantCode.toUpperCase(), name: plantName }),
+        body: JSON.stringify({
+          code: plantCode.toUpperCase(),
+          name: plantName,
+        }),
       });
       const data = await response.json();
 
       if (data.success) {
         setPlants((prev) => [
           ...prev,
-          { code: plantCode.toUpperCase(), name: plantName, kind: "PLANT", children: [] },
+          {
+            code: plantCode.toUpperCase(),
+            name: plantName,
+            kind: "PLANT",
+            children: [],
+          },
         ]);
         setPlantCode("");
         setPlantName("");
@@ -160,7 +171,11 @@ export default function OnboardingPage() {
     }
   };
 
-  function startAddingChild(parentCode: string, rootCode: string, kind: LocationKind) {
+  function startAddingChild(
+    parentCode: string,
+    rootCode: string,
+    kind: LocationKind,
+  ) {
     setAddingChild({ parentCode, rootCode, kind });
     setChildCode("");
     setChildName("");
@@ -185,11 +200,15 @@ export default function OnboardingPage() {
             className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center
               ${isSelected ? "border-yellow-500 bg-yellow-500" : "border-gray-300"}`}
           >
-            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+            {isSelected && (
+              <div className="w-1.5 h-1.5 rounded-full bg-white" />
+            )}
           </div>
 
           <span className="text-lg">{kindIcon[node.kind]}</span>
-          <span className="font-mono text-sm font-bold text-gray-800">{node.code}</span>
+          <span className="font-mono text-sm font-bold text-gray-800">
+            {node.code}
+          </span>
           <span className="text-gray-400">—</span>
           <span className="text-sm text-gray-700 flex-1">{node.name}</span>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -212,7 +231,11 @@ export default function OnboardingPage() {
 
         {/* Inline form for adding child */}
         {isAddingHere && childKind && (
-          <div className={depth > 0 ? "ml-6 pl-4 border-l-2 border-yellow-200" : ""}>
+          <div
+            className={
+              depth > 0 ? "ml-6 pl-4 border-l-2 border-yellow-200" : ""
+            }
+          >
             <div className="ml-6 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
               <p className="text-xs font-medium text-gray-600 mb-2">
                 New {kindLabel[childKind]} inside{" "}
@@ -272,14 +295,18 @@ export default function OnboardingPage() {
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10">
         <Image src="/icons/usermes.svg" alt="Usermes" width={40} height={40} />
-        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">Usermes</h1>
+        <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
+          Usermes
+        </h1>
       </div>
 
       <div className="w-full max-w-2xl space-y-4">
         {/* Banner */}
         <div className="bg-primary bg-[image:url('/assets/png/effect.png')] rounded-2xl p-6 shadow-lg">
           <h2 className="text-xl font-bold text-gray-800 mb-1">
-            {!hasLocations ? "Welcome! Set up your plant locations" : "Select your working location"}
+            {!hasLocations
+              ? "Welcome! Set up your plant locations"
+              : "Select your working location"}
           </h2>
           <p className="text-sm text-gray-700">
             {!hasLocations
@@ -311,7 +338,9 @@ export default function OnboardingPage() {
         {hasLocations && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              {selectedCode ? `Selected: ${selectedCode}` : "Click a location to select it"}
+              {selectedCode
+                ? `Selected: ${selectedCode}`
+                : "Click a location to select it"}
             </h3>
             {plants.map((plant) => renderNode(plant, plant.code))}
           </div>
@@ -320,11 +349,15 @@ export default function OnboardingPage() {
         {/* Create plant form */}
         {showCreatePlant ? (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">New plant</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              New plant
+            </h3>
             <form onSubmit={handleCreatePlant} className="space-y-3">
               <div className="flex gap-3">
                 <div className="w-1/3">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Code</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Code
+                  </label>
                   <input
                     value={plantCode}
                     onChange={(e) => setPlantCode(e.target.value)}
@@ -335,7 +368,9 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Name
+                  </label>
                   <input
                     value={plantName}
                     onChange={(e) => setPlantName(e.target.value)}
@@ -355,7 +390,10 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowCreatePlant(false); setError(""); }}
+                  onClick={() => {
+                    setShowCreatePlant(false);
+                    setError("");
+                  }}
                   className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
                 >
                   Cancel
@@ -372,7 +410,7 @@ export default function OnboardingPage() {
               setAddingChild(null);
               setError("");
             }}
-            className="w-full py-3 border-2 border-dashed border-yellow-400 rounded-2xl text-gray-500 hover:bg-yellow-50 transition-colors text-sm font-medium"
+            className="w-full py-3 border-2 border-dashed border-yellow-400 rounded-xl text-gray-500 hover:bg-yellow-50 transition-colors text-sm font-medium"
           >
             + Add {!hasLocations ? "your first" : "another"} plant
           </button>
@@ -389,7 +427,9 @@ export default function OnboardingPage() {
             }}
             className="w-full py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {selectedCode ? `Enter Dashboard — ${selectedCode}` : "Select a location to continue"}
+            {selectedCode
+              ? `Enter Dashboard — ${selectedCode}`
+              : "Select a location to continue"}
           </button>
         )}
       </div>
