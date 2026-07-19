@@ -1,47 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendAddress, isValidConfigToken } from "@/utils/config-map";
-
-function resolveBackend(
-  request: NextRequest,
-): { address: string } | NextResponse {
-  const configToken = request.headers.get("x-config");
-
-  if (!configToken) {
-    return NextResponse.json(
-      { success: false, error: "Configuration token is required" },
-      { status: 400 },
-    );
-  }
-
-  if (!isValidConfigToken(configToken)) {
-    return NextResponse.json(
-      { success: false, error: "Invalid configuration" },
-      { status: 401 },
-    );
-  }
-
-  const backendAddress = getBackendAddress(configToken);
-  if (!backendAddress) {
-    return NextResponse.json(
-      { success: false, error: "Configuration not found" },
-      { status: 404 },
-    );
-  }
-
-  return { address: backendAddress };
-}
+import { resolveBackend } from "@/utils/api-route-guard";
 
 export async function GET(request: NextRequest) {
   const resolved = resolveBackend(request);
   if (resolved instanceof NextResponse) return resolved;
-
-  const authToken = request.headers.get("authorization");
-  if (!authToken) {
-    return NextResponse.json(
-      { success: false, error: "Authorization token is required" },
-      { status: 401 },
-    );
-  }
 
   try {
     const response = await fetch(
@@ -50,7 +12,7 @@ export async function GET(request: NextRequest) {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken,
+          Authorization: resolved.authToken,
         },
       },
     );
@@ -78,14 +40,6 @@ export async function POST(request: NextRequest) {
   const resolved = resolveBackend(request);
   if (resolved instanceof NextResponse) return resolved;
 
-  const authToken = request.headers.get("authorization");
-  if (!authToken) {
-    return NextResponse.json(
-      { success: false, error: "Authorization token is required" },
-      { status: 401 },
-    );
-  }
-
   try {
     const body = await request.json();
 
@@ -95,7 +49,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken,
+          Authorization: resolved.authToken,
         },
         body: JSON.stringify(body),
       },

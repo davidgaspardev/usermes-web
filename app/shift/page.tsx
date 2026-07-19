@@ -1,8 +1,11 @@
+"use client";
+
 import { useEffect } from "react";
+import { getAuthToken } from "@/utils/api-client";
 
 export default function ShiftPage() {
   useEffect(() => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) {
       window.location.href = "/login";
       return;

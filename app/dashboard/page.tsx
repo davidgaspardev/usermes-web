@@ -1,16 +1,9 @@
-import { redirect } from "next/navigation";
-
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ location?: string }>;
 }) {
   const { location } = await searchParams;
-
-  // Redirect to location selection if no location is specified
-  if (!location) {
-    redirect("/location");
-  }
 
   return (
     <div>

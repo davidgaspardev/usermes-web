@@ -1,49 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBackendAddress, isValidConfigToken } from "@/utils/config-map";
+import { resolveBackend } from "@/utils/api-route-guard";
 
 export async function POST(request: NextRequest) {
-  const configToken = request.headers.get("x-config");
-
-  const authToken = request.headers.get("authorization");
-  if (!authToken) {
-    return NextResponse.json(
-      { success: false, error: "Authorization token is required" },
-      { status: 401 },
-    );
-  }
-
-  if (!configToken) {
-    return NextResponse.json(
-      { success: false, error: "Configuration token is required" },
-      { status: 400 },
-    );
-  }
-
-  if (!isValidConfigToken(configToken)) {
-    return NextResponse.json(
-      { success: false, error: "Invalid configuration" },
-      { status: 401 },
-    );
-  }
-
-  const backendAddress = getBackendAddress(configToken);
-  if (!backendAddress) {
-    return NextResponse.json(
-      { success: false, error: "Configuration not found" },
-      { status: 404 },
-    );
-  }
+  const resolved = resolveBackend(request);
+  if (resolved instanceof NextResponse) return resolved;
 
   try {
     const body = await request.json();
 
     const response = await fetch(
-      `${backendAddress}/v1/api/organization/locations/add`,
+      `${resolved.address}/v1/api/organization/locations/add`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken,
+          Authorization: resolved.authToken,
         },
         body: JSON.stringify(body),
       },

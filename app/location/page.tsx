@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiClient } from "@/utils/api-client";
+import { apiClient, getAuthToken } from "@/utils/api-client";
 import LocationForm from "./_components/LocationForm";
 import PageWrapper from "@/components/page-wrapper";
 import Center from "@/components/center";
@@ -65,11 +65,10 @@ export default function LocationPage() {
   const [addingChild, setAddingChild] = useState<AddingChild | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
   // On mount: guard auth, then load existing locations
   useEffect(() => {
-    const authToken = localStorage.getItem("authToken");
+    const authToken = getAuthToken();
     if (!authToken) {
       window.location.href = "/login";
       return;
@@ -103,7 +102,6 @@ export default function LocationPage() {
   }, []);
 
   const handleCreatePlant = async (data: { code: string; name: string }) => {
-    setError("");
     setIsSubmitting(true);
 
     try {
@@ -130,13 +128,6 @@ export default function LocationPage() {
       } else {
         throw new Error(result.error || "Failed to create plant");
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to create plant. Please try again.",
-      );
-      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -144,7 +135,6 @@ export default function LocationPage() {
 
   const handleAddChild = async (data: { code: string; name: string }) => {
     if (!addingChild) return;
-    setError("");
     setIsSubmitting(true);
 
     try {
@@ -172,13 +162,6 @@ export default function LocationPage() {
       } else {
         throw new Error(result.error || "Failed to add location");
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to add location. Please try again.",
-      );
-      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -190,7 +173,6 @@ export default function LocationPage() {
     kind: LocationKind,
   ) {
     setAddingChild({ parentCode, rootCode, kind });
-    setError("");
   }
 
   function renderNode(node: LocationNode, rootCode: string, depth = 0) {
@@ -297,13 +279,6 @@ export default function LocationPage() {
             )}
           </header>
 
-          {/* Error */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
           <div className="border border-gray-200 rounded-lg p-5 space-y-1">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
               Locations
@@ -315,10 +290,7 @@ export default function LocationPage() {
               <LocationForm
                 type="plant"
                 onSubmit={handleCreatePlant}
-                onCancel={() => {
-                  setShowCreatePlant(false);
-                  setError("");
-                }}
+                onCancel={() => setShowCreatePlant(false)}
                 isSubmitting={isSubmitting}
               />
             ) : (
@@ -326,7 +298,6 @@ export default function LocationPage() {
                 onClick={() => {
                   setShowCreatePlant(true);
                   setAddingChild(null);
-                  setError("");
                 }}
                 className="w-full py-3 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors text-sm font-medium"
               >

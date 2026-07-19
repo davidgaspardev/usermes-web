@@ -1,64 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getBackendAddress, isValidConfigToken } from '@/utils/config-map';
+import { NextRequest, NextResponse } from "next/server";
+import { resolveBackend } from "@/utils/api-route-guard";
 
 export async function GET(request: NextRequest) {
-    try {
-        const authToken = request.headers.get('authorization');
-        const configToken = request.headers.get('x-config');
+  const resolved = resolveBackend(request);
+  if (resolved instanceof NextResponse) return resolved;
 
-        if (!configToken) {
-            return NextResponse.json(
-                { sucess: false, error: 'Configuration token is required'},
-                { status: 400}
-            );
-        }
+  try {
+    const response = await fetch(`${resolved.address}/api/organization`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: resolved.authToken,
+      },
+    });
 
-        if (!authToken) {
-            return NextResponse.json(
-                { error: 'Authorization token is required' },
-                { status: 401 }
-            );
-        }
+    const data = await response.json();
 
-        if (!isValidConfigToken(configToken)) {
-            console.warn(`Invalid config token attempted: ${configToken.substring(0, 10)}...`);
-            return NextResponse.json(
-                { sucess: false, error: 'Invalid configuration' },
-                { status: 401 }
-            );
-        }
-
-        const backendAddress = getBackendAddress(configToken);
-        if (!backendAddress) {
-            return NextResponse.json(
-                { error: 'Configuration not found' },
-                { status: 404 }
-            );
-        }
-
-        const response = await fetch(`${backendAddress}/api/organization`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': authToken,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            return NextResponse.json(
-                { sucess: false, error: errorData.error },
-                { status: response.status }
-            );
-        }
-
-        const data = await response.json();
-        return NextResponse.json(data);
-    } catch(err) {
-        console.error('Location GET error:', err);
-        return NextResponse.json(
-            { sucess: false, error: 'An unexpected error occurred' },
-            { status: 500 }
-        )
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: data.message || "Failed to fetch organization",
+        },
+        { status: response.status },
+      );
     }
+
+    return NextResponse.json({ success: true, ...data });
+  } catch (error) {
+    console.error("Location GET error:", error);
+    return NextResponse.json(
+      { success: false, error: "An unexpected error occurred" },
+      { status: 500 },
+    );
+  }
 }

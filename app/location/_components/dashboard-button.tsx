@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Nullable } from "@/utils/types";
 
 interface DashboardButtonProps {
@@ -6,13 +9,14 @@ interface DashboardButtonProps {
 
 export default function DashboardButton(props: DashboardButtonProps) {
   const { selectedCode } = props;
+  const router = useRouter();
 
   return (
     <button
       disabled={!selectedCode}
       onClick={() => {
         if (selectedCode) {
-          window.location.href = `/dashboard?location=${selectedCode}`;
+          router.push(`/dashboard?location=${selectedCode}`);
         }
       }}
       className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
