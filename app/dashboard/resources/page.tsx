@@ -36,8 +36,8 @@ export default function ResourcesPage() {
       setLoading(true);
       setError('');
       const data = await getResources(50, 0);
-      setResources(data.resources);
-      setTotal(data.total);
+      setResources(data.resources ?? []);
+      setTotal(data.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load resources');
     } finally {
@@ -223,7 +223,7 @@ export default function ResourcesPage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.shift_id}
+                  value={formData.shift_id ?? ''}
                   onChange={(e) => setFormData({ ...formData, shift_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   placeholder="SHIFT123"

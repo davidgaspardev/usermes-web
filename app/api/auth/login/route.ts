@@ -1,24 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getBackendAddress, isValidConfigToken } from '@/utils/config-map';
+import { NextRequest, NextResponse } from "next/server";
+import { getBackendAddress, isValidConfigToken } from "@/utils/config-map";
 
 export async function POST(request: NextRequest) {
   try {
     // Get x-config from headers
-    const configToken = request.headers.get('x-config');
+    const configToken = request.headers.get("x-config");
 
     if (!configToken) {
       return NextResponse.json(
-        { success: false, error: 'Configuration token is required' },
-        { status: 400 }
+        { success: false, error: "Configuration token is required" },
+        { status: 400 },
       );
     }
 
     // Validate config token exists in server-side map
     if (!isValidConfigToken(configToken)) {
-      console.warn(`Invalid config token attempted: ${configToken.substring(0, 10)}...`);
+      console.warn(
+        `Invalid config token attempted: ${configToken.substring(0, 10)}...`,
+      );
       return NextResponse.json(
-        { success: false, error: 'Invalid configuration' },
-        { status: 401 }
+        { success: false, error: "Invalid configuration" },
+        { status: 401 },
       );
     }
 
@@ -27,8 +29,8 @@ export async function POST(request: NextRequest) {
 
     if (!backendAddress) {
       return NextResponse.json(
-        { success: false, error: 'Configuration not found' },
-        { status: 404 }
+        { success: false, error: "Configuration not found" },
+        { status: 404 },
       );
     }
 
@@ -38,16 +40,16 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: 'Username and password are required' },
-        { status: 400 }
+        { success: false, error: "Username and password are required" },
+        { status: 400 },
       );
     }
 
     // Call backend login endpoint
-    const response = await fetch(`${backendAddress}/api/users/login`, {
-      method: 'POST',
+    const response = await fetch(`${backendAddress}/v1/api/iam/users/login`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
@@ -55,8 +57,8 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { success: false, error: errorData.message || 'Login failed' },
-        { status: response.status }
+        { success: false, error: errorData.message || "Login failed" },
+        { status: response.status },
       );
     }
 
@@ -65,13 +67,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       token: data.token,
-      message: data.message || 'Login successful',
+      message: data.message || "Login successful",
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     return NextResponse.json(
-      { success: false, error: 'An unexpected error occurred' },
-      { status: 500 }
+      { success: false, error: "An unexpected error occurred" },
+      { status: 500 },
     );
   }
 }

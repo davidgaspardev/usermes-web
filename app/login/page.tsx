@@ -1,24 +1,29 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { decodeConfig, type BackendConfig } from "@/utils/backend-config";
-import { saveConfigToken, getConfigToken, apiClient } from "@/utils/api-client";
+import {
+  saveConfigToken,
+  getConfigToken,
+  saveAuthToken,
+  apiClient,
+} from "@/utils/api-client";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<BackendConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     // Check if config exists in localStorage first
     const storedToken = getConfigToken();
-    
+
     // Get config from URL param
-    const configParam = searchParams.get('config');
-    
+    const configParam = searchParams.get("config");
+
     if (configParam) {
       // Save to localStorage for future requests
       saveConfigToken(configParam);
@@ -33,34 +38,34 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
 
     try {
       // Call API route with x-config header (automatically added by apiClient)
-      const response = await apiClient('/api/auth/login', {
-        method: 'POST',
+      const response = await apiClient("/api/auth/login", {
+        method: "POST",
         body: JSON.stringify({ username, password }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        // Store token and redirect
-        const { saveAuthToken } = await import('@/utils/api-client');
-        saveAuthToken(result.token || '');
-        // Redirect to dashboard or home
-        window.location.href = '/dashboard';
+        // Store token and go to location selection
+        saveAuthToken(result.token || "");
+        window.location.href = "/location";
       } else {
-        setError(result.error || 'Login failed');
+        setError(result.error || "Login failed");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      console.error('Login error:', err);
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred",
+      );
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +98,10 @@ function LoginForm() {
             )}
 
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-800 mb-2">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-800 mb-2"
+              >
                 Username
               </label>
               <input
@@ -108,7 +116,10 @@ function LoginForm() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-800 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-800 mb-2"
+              >
                 Password
               </label>
               <input
@@ -127,7 +138,7 @@ function LoginForm() {
               disabled={isLoading || !config}
               className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
@@ -147,11 +158,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-white">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );
