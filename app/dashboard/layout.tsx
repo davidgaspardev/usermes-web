@@ -1,9 +1,9 @@
 "use client";
 
-import { JSX, Suspense, useState } from "react";
+import { JSX, Suspense, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -13,7 +13,15 @@ function DashboardLayoutInner({ children }: DashboardLayoutProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const location = searchParams.get("location");
+
+  // Redirect to location selection if no location is specified
+  useEffect(() => {
+    if (!location) {
+      router.push("/location");
+    }
+  }, [location, router]);
 
   // Preserve the location param in all nav links
   const withLocation = (path: string) =>

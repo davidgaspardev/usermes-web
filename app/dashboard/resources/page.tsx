@@ -36,8 +36,8 @@ export default function ResourcesPage() {
       setLoading(true);
       setError('');
       const data = await getResources(50, 0);
-      setResources(data.resources);
-      setTotal(data.total);
+      setResources(data.resources ?? []);
+      setTotal(data.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load resources');
     } finally {
